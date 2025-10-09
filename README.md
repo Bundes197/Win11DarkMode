@@ -1,11 +1,27 @@
 # Win11DarkMode
-Script, that enables dark mode across the whole OS despite not having active Windows 11 license.
+Simple PowerShell script that enables dark mode across the entire Windows 11 system — even on machines without an active Windows license.
+
+## Features
+- Enables **dark** or **light** mode system-wide  
+- Optionally disables the *“Activate Windows”* watermark  
+- Automatically requests admin privileges if needed
 
 ## Usage
-Simply open run.bat and continue according to the terminal.<br>
-If an error occurs, please try running run.bat as administrator.
+1. Open **PowerShell as Administrator**  
+2. Navigate to the folder containing `darkmode.ps1`  
+3. Click the address bar at the top, right-click → **Copy**  
+4. In PowerShell, type:  
+    ```powershell
+    cd <paste-your-path-here>
+    ```
+    and press **Enter**
+5. Run the script:
+    ```powershell
+    .\darkmode.ps1
+    ```
+6. Follow the on-screen instructions
 
-### Parameters
-You can use parameters in cmd to change program behavior, only first parameter is accepted<br>
-/r = change to dark mode (default)<br>
-/l = change to light mode<br>
+## Requirements
+- Windows 11
+- PowerShell 5.1 or newer
+- Administrator privileges
