@@ -2,24 +2,31 @@ cls
 
 [PSConstant]$DARK_MODE = 0
 [PSConstant]$LIGHT_MODE = 1
+[String]$PersonalizePath = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize"
 
 
 function Show-Error {
+    param(
+        [Parameter(Mandatory=$true)]
+        [System.Management.Automation.ErrorRecord]$ErrorObject
+    )
+
     $ScriptName = Split-Path -Leaf $PSCommandPath
     Write-Host "Error: Unable to modify registry value." -ForegroundColor Red
-    Write-Host "Details: $($_.Exception.Message)" -ForegroundColor DarkRed
-    Write-Host "Try unblocking the $($ScriptName) (Right-click on file -> Properties -> Unblock)."
+    Write-Host "Details: $($ErrorObject.Exception.Message)" -ForegroundColor DarkRed
+    Write-Host "Try unblocking the $($ScriptName) file (Right-click on file -> Properties -> Unblock)."
     Write-Host "Or try running $($ScriptName) as administrator."
 }
 
 function Execute-Deactivate-Watermark {
     try {
         # Turn off 'Activate Windows' watermark
-        Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name PaintDesktopVersion -Value 0 -ErrorAction Stop
+        Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Services\svsvc" -Name Start -Value 4 -ErrorAction Stop
+        Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\WindowsNT\CurrentVersion\SoftwareProtectionPlatform\Activation" -Name NotificationDisabled -Value 1 -ErrorAction Stop
 
         Write-Host "'Activate Windows' watermark has been turned off." -ForegroundColor Green
     } catch {
-        Show-Error
+        Show-Error $_
     }
     
 }
@@ -47,30 +54,46 @@ function Set-Mode {
 
     try {
         # Set operating system to use dark/light mode
-        Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name SystemUsesLightTheme -Value $ModeValue -ErrorAction Stop
+        Set-ItemProperty -Path $PersonalizePath -Name SystemUsesLightTheme -Value $ModeValue -ErrorAction Stop
 
         # Set applications to use dark/light mode
-        Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name AppsUseLightTheme -Value $ModeValue -ErrorAction Stop
+        Set-ItemProperty -Path $PersonalizePath -Name AppsUseLightTheme -Value $ModeValue -ErrorAction Stop
 
         Write-Host "$($ModeName) mode has been successfully set." -ForegroundColor Green
     } catch {
-        Show-Error
+        Show-Error $_
     }
 }
 
 function Toggle-Accent-Color-Prevalence {
-    $accColorVal = Get-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name ColorPrevalence
+    $accColorVal = (Get-ItemProperty -Path $PersonalizePath -Name ColorPrevalence).ColorPrevalence
     
     try {
         if ($accColorVal -eq 0) {
-            Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name ColorPrevalence -Value 1
+            Set-ItemProperty -Path $PersonalizePath -Name ColorPrevalence -Value 1
             Write-Host "Theme color prevalence has been successfully turned on." -ForegroundColor Green
         } else {
-            Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name ColorPrevalence -Value 0
+            Set-ItemProperty -Path $PersonalizePath -Name ColorPrevalence -Value 0
             Write-Host "Theme color prevalence has been successfully turned off." -ForegroundColor Green
         }
     } catch {
-        Show-Error
+        Show-Error $_
+    }
+}
+
+function Toggle-Theme-Transparency {
+    $transparencyVal = (Get-ItemProperty -Path $PersonalizePath -Name EnableTransparency).EnableTransparency
+    
+    try {
+        if ($transparencyVal -eq 0) {
+            $transparencyVal  = Set-ItemProperty -Path $PersonalizePath -Name EnableTransparency -Value 1
+            Write-Host "Theme transparency has been successfully turned on." -ForegroundColor Green
+        } else {
+            $transparencyVal  = Set-ItemProperty -Path $PersonalizePath -Name EnableTransparency -Value 0
+            Write-Host "Theme transparency has been successfully turned off." -ForegroundColor Green
+        }
+    } catch {
+        Show-Error $_
     }
 }
 
@@ -90,11 +113,12 @@ Write-Host "[1] Set Dark mode"
 Write-Host "[2] Set Light mode"
 Write-Host "[3] Turn off 'Activate Windows' watermark"
 Write-Host "[4] Toggle accent color prevalence in system"
-Write-Host "[5] Exit"
+Write-Host "[5] Toggle window transparency in system"
+Write-Host "[6] Exit"
 
 Write-Host ""
 
-$AnswerVal = Read-Host "Please choose an option (1,2,3,4,5)"
+$AnswerVal = Read-Host "Please choose an option (1,2,3,4,5,6)"
 
 if ($AnswerVal -eq "1") {
     Deactivate-Watermark
@@ -108,9 +132,12 @@ if ($AnswerVal -eq "1") {
     Execute-Deactivate-Watermark
 
 } elseif ($AnswerVal -eq "4") {
-    Toggle-Accent-Color-Prevalence    
+    Toggle-Accent-Color-Prevalence   
 
 } elseif ($AnswerVal -eq "5") {
+    Toggle-Theme-Transparency 
+
+} elseif ($AnswerVal -eq "6") {
     exit
 
 } else {
