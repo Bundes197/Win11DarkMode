@@ -2,8 +2,16 @@ cls
 
 [PSConstant]$DARK_MODE = 0
 [PSConstant]$LIGHT_MODE = 1
-[String]$PersonalizePath = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+[String]$PERSONALIZE_PATH = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+[String]$ACCENT_PATH = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Accent" # AccentColorMenu, StartColorMenu
+[String]$DWM_PATH = "HKCU:\SOFTWARE\Microsoft\Windows\DWM" # AccentColor, EnableWindowColorization, ColorizationAfterglow, ColorizationColor
 
+[PSConstant]$SET_DARK_MODE = "1"
+[PSConstant]$SET_LIGHT_MODE = "2"
+[PSConstant]$DISABLE_WIN_WATERMARK = "3"
+[PSConstant]$COLOR_PREVELANCE = "4"
+[PSConstant]$SYSTEM_TRANSPARENCY = "5"
+[PSConstant]$EXIT = "6"
 
 function Show-Error {
     param(
@@ -54,10 +62,10 @@ function Set-Mode {
 
     try {
         # Set operating system to use dark/light mode
-        Set-ItemProperty -Path $PersonalizePath -Name SystemUsesLightTheme -Value $ModeValue -ErrorAction Stop
+        Set-ItemProperty -Path $PERSONALIZE_PATH -Name SystemUsesLightTheme -Value $ModeValue -ErrorAction Stop
 
         # Set applications to use dark/light mode
-        Set-ItemProperty -Path $PersonalizePath -Name AppsUseLightTheme -Value $ModeValue -ErrorAction Stop
+        Set-ItemProperty -Path $PERSONALIZE_PATH -Name AppsUseLightTheme -Value $ModeValue -ErrorAction Stop
 
         Write-Host "$($ModeName) mode has been successfully set." -ForegroundColor Green
     } catch {
@@ -66,14 +74,16 @@ function Set-Mode {
 }
 
 function Toggle-Accent-Color-Prevalence {
-    $accColorVal = (Get-ItemProperty -Path $PersonalizePath -Name ColorPrevalence).ColorPrevalence
+    $accColorVal = (Get-ItemProperty -Path $PERSONALIZE_PATH -Name ColorPrevalence).ColorPrevalence
     
     try {
         if ($accColorVal -eq 0) {
-            Set-ItemProperty -Path $PersonalizePath -Name ColorPrevalence -Value 1
+            Set-ItemProperty -Path $PERSONALIZE_PATH -Name ColorPrevalence -Value 1
+            Set-ItemProperty -Path $DWM_PATH -Name ColorPrevalence -Value 1
             Write-Host "Theme color prevalence has been successfully turned on." -ForegroundColor Green
         } else {
-            Set-ItemProperty -Path $PersonalizePath -Name ColorPrevalence -Value 0
+            Set-ItemProperty -Path $PERSONALIZE_PATH -Name ColorPrevalence -Value 0
+            Set-ItemProperty -Path $DWM_PATH -Name ColorPrevalence -Value 0
             Write-Host "Theme color prevalence has been successfully turned off." -ForegroundColor Green
         }
     } catch {
@@ -82,14 +92,14 @@ function Toggle-Accent-Color-Prevalence {
 }
 
 function Toggle-Theme-Transparency {
-    $transparencyVal = (Get-ItemProperty -Path $PersonalizePath -Name EnableTransparency).EnableTransparency
+    $transparencyVal = (Get-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency).EnableTransparency
     
     try {
         if ($transparencyVal -eq 0) {
-            $transparencyVal  = Set-ItemProperty -Path $PersonalizePath -Name EnableTransparency -Value 1
+            $transparencyVal  = Set-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency -Value 1
             Write-Host "Theme transparency has been successfully turned on." -ForegroundColor Green
         } else {
-            $transparencyVal  = Set-ItemProperty -Path $PersonalizePath -Name EnableTransparency -Value 0
+            $transparencyVal  = Set-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency -Value 0
             Write-Host "Theme transparency has been successfully turned off." -ForegroundColor Green
         }
     } catch {
@@ -120,24 +130,24 @@ Write-Host ""
 
 $AnswerVal = Read-Host "Please choose an option (1,2,3,4,5,6)"
 
-if ($AnswerVal -eq "1") {
+if ($AnswerVal -eq $SET_DARK_MODE) {
     Deactivate-Watermark
     Set-Mode $DARK_MODE
 
-} elseif ($AnswerVal -eq "2") {
+} elseif ($AnswerVal -eq $SET_LIGHT_MODE) {
     Deactivate-Watermark
     Set-Mode $LIGHT_MODE
 
-} elseif ($AnswerVal -eq "3") {
+} elseif ($AnswerVal -eq $DISABLE_WIN_WATERMARK) {
     Execute-Deactivate-Watermark
 
-} elseif ($AnswerVal -eq "4") {
+} elseif ($AnswerVal -eq $COLOR_PREVELANCE) {
     Toggle-Accent-Color-Prevalence   
 
-} elseif ($AnswerVal -eq "5") {
+} elseif ($AnswerVal -eq $SYSTEM_TRANSPARENCY) {
     Toggle-Theme-Transparency 
 
-} elseif ($AnswerVal -eq "6") {
+} elseif ($AnswerVal -eq $EXIT) {
     exit
 
 } else {
