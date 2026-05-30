@@ -1,17 +1,17 @@
 cls
 
-[PSConstant]$DARK_MODE = 0
-[PSConstant]$LIGHT_MODE = 1
+New-Variable -Name "DARK_MODE" -Value ([int]0) -Option Constant
+New-Variable -Name "LIGHT_MODE" -Value ([int]1) -Option Constant
 [String]$PERSONALIZE_PATH = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize"
 [String]$ACCENT_PATH = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Accent" # AccentColorMenu, StartColorMenu
 [String]$DWM_PATH = "HKCU:\SOFTWARE\Microsoft\Windows\DWM" # AccentColor, EnableWindowColorization, ColorizationAfterglow, ColorizationColor
 
-[PSConstant]$SET_DARK_MODE = "1"
-[PSConstant]$SET_LIGHT_MODE = "2"
-[PSConstant]$DISABLE_WIN_WATERMARK = "3"
-[PSConstant]$COLOR_PREVELANCE = "4"
-[PSConstant]$SYSTEM_TRANSPARENCY = "5"
-[PSConstant]$EXIT = "6"
+New-Variable -Name "SET_DARK_MODE" -Value "1" -Option Constant
+New-Variable -Name "SET_LIGHT_MODE" -Value "2" -Option Constant
+New-Variable -Name "DISABLE_WIN_WATERMARK" -Value "3" -Option Constant
+New-Variable -Name "COLOR_PREVALENCE" -Value "4" -Option Constant
+New-Variable -Name "SYSTEM_TRANSPARENCY" -Value "5" -Option Constant
+New-Variable -Name "EXIT" -Value "6" -Option Constant
 
 function Show-Error {
     param(
@@ -20,10 +20,11 @@ function Show-Error {
     )
 
     $ScriptName = Split-Path -Leaf $PSCommandPath
-    Write-Host "Error: Unable to modify registry value." -ForegroundColor Red
+    Write-Host "An error has occurred." -ForegroundColor Red
     Write-Host "Details: $($ErrorObject.Exception.Message)" -ForegroundColor DarkRed
     Write-Host "Try unblocking the $($ScriptName) file (Right-click on file -> Properties -> Unblock)."
     Write-Host "Or try running $($ScriptName) as administrator."
+    exit
 }
 
 function Execute-Deactivate-Watermark {
@@ -32,7 +33,7 @@ function Execute-Deactivate-Watermark {
         Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Services\svsvc" -Name Start -Value 4 -ErrorAction Stop
         Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\WindowsNT\CurrentVersion\SoftwareProtectionPlatform\Activation" -Name NotificationDisabled -Value 1 -ErrorAction Stop
 
-        Write-Host "'Activate Windows' watermark has been turned off." -ForegroundColor Green
+        Write-Host "'Activate Windows' watermark related settings have been modified." -ForegroundColor Green
     } catch {
         Show-Error $_
     }
@@ -74,9 +75,9 @@ function Set-Mode {
 }
 
 function Toggle-Accent-Color-Prevalence {
-    $accColorVal = (Get-ItemProperty -Path $PERSONALIZE_PATH -Name ColorPrevalence).ColorPrevalence
-    
     try {
+        $accColorVal = (Get-ItemProperty -Path $PERSONALIZE_PATH -Name ColorPrevalence).ColorPrevalence
+
         if ($accColorVal -eq 0) {
             Set-ItemProperty -Path $PERSONALIZE_PATH -Name ColorPrevalence -Value 1
             Set-ItemProperty -Path $DWM_PATH -Name ColorPrevalence -Value 1
@@ -92,14 +93,14 @@ function Toggle-Accent-Color-Prevalence {
 }
 
 function Toggle-Theme-Transparency {
-    $transparencyVal = (Get-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency).EnableTransparency
-    
     try {
+        $transparencyVal = (Get-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency).EnableTransparency
+
         if ($transparencyVal -eq 0) {
-            $transparencyVal  = Set-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency -Value 1
+            Set-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency -Value 1
             Write-Host "Theme transparency has been successfully turned on." -ForegroundColor Green
         } else {
-            $transparencyVal  = Set-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency -Value 0
+            Set-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency -Value 0
             Write-Host "Theme transparency has been successfully turned off." -ForegroundColor Green
         }
     } catch {
@@ -109,11 +110,9 @@ function Toggle-Theme-Transparency {
 
 # Check if run as admin, if not, restart
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Start-Process PowerShell -Verb RunAs -ArgumentList "-NoProfile", "-ExecutionPolicy Bypass", "-Command `"cd '$pwd'; & '$PSCommandPath'`""
+    Start-Process powershell.exe -Verb RunAs -ArgumentList "-NoProfile", "-ExecutionPolicy Bypass", "-Command `"cd '$pwd'; & '$PSCommandPath'`""
     exit;
 }
-
-$ModeValue = $DARK_MODE # Set dark mode as default
 
 Write-Host ""
 Write-Host "Welcome to Win11DarkMode. What would you like to do?"
@@ -121,7 +120,7 @@ Write-Host ""
 
 Write-Host "[1] Set Dark mode"
 Write-Host "[2] Set Light mode"
-Write-Host "[3] Turn off 'Activate Windows' watermark"
+Write-Host "[3] Turn off 'Activate Windows' watermark (experimental, might not work)"
 Write-Host "[4] Toggle accent color prevalence in system"
 Write-Host "[5] Toggle window transparency in system"
 Write-Host "[6] Exit"
@@ -130,29 +129,36 @@ Write-Host ""
 
 $AnswerVal = Read-Host "Please choose an option (1,2,3,4,5,6)"
 
-if ($AnswerVal -eq $SET_DARK_MODE) {
-    Deactivate-Watermark
-    Set-Mode $DARK_MODE
+switch ($AnswerVal) {
+    $SET_DARK_MODE {
+        Set-Mode $DARK_MODE
+    }
 
-} elseif ($AnswerVal -eq $SET_LIGHT_MODE) {
-    Deactivate-Watermark
-    Set-Mode $LIGHT_MODE
+    $SET_LIGHT_MODE {
+        Set-Mode $LIGHT_MODE
+    }
 
-} elseif ($AnswerVal -eq $DISABLE_WIN_WATERMARK) {
-    Execute-Deactivate-Watermark
+    $DISABLE_WIN_WATERMARK {
+        Execute-Deactivate-Watermark
+    }
 
-} elseif ($AnswerVal -eq $COLOR_PREVELANCE) {
-    Toggle-Accent-Color-Prevalence   
+    $COLOR_PREVALENCE {
+        Toggle-Accent-Color-Prevalence
+    }
 
-} elseif ($AnswerVal -eq $SYSTEM_TRANSPARENCY) {
-    Toggle-Theme-Transparency 
+    $SYSTEM_TRANSPARENCY {
+        Toggle-Theme-Transparency
+    }
 
-} elseif ($AnswerVal -eq $EXIT) {
-    exit
+    $EXIT {
+        exit
+    }
 
-} else {
-    Write-Host "Invalid input." -ForegroundColor Red
-    exit
+    default {
+        Write-Host "Invalid input." -ForegroundColor Red
+        Start-Sleep -Seconds 3
+        exit
+    }
 }
 
 Write-Host ""
