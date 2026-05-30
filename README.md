@@ -22,19 +22,6 @@ Simple PowerShell utility for changing Windows 11 personalization settings — e
     Set-ExecutionPolicy Restricted
     ```
 
-## Enabling script execution
-- PowerShell by default blocks running scripts for security reasons
-- If you cannot execute the script, you need to **allow script execution**
-- In PowerShell, type:
-    ``` powershell
-    Set-ExecutionPolicy RemoteSigned
-    ```
-  and confirm with `y`
-- This change is permanent! If you want to revert the change, type:
-    ``` powershell
-    Set-ExecutionPolicy Restricted
-    ```
-
 ## Usage
 1. Open **PowerShell as Administrator**  
 2. Navigate to the folder containing `darkmode.ps1`  
