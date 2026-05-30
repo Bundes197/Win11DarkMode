@@ -1,10 +1,26 @@
 # Win11DarkMode
-Simple PowerShell script that enables dark mode across the entire Windows 11 system — even on machines without an active Windows license.
+Simple PowerShell utility for changing Windows 11 personalization settings — even on machines without an active Windows license.
 
 ## Features
-- Enables **dark** or **light** mode system-wide  
-- Optionally disables the *“Activate Windows”* watermark  
-- Automatically requests admin privileges if needed
+- Enable Dark mode system-wide
+- Enable Light mode system-wide
+- Toggle accent color prevalence in the Start menu and taskbar
+- Toggle transparency effects
+- Experimental option for hiding the "Activate Windows" watermark
+- Automatically requests administrator privileges when needed
+
+## Enabling script execution
+- PowerShell by default blocks running scripts for security reasons
+- If you cannot execute the script, you need to **allow script execution**
+- In PowerShell, type:
+    ```powershell
+    Set-ExecutionPolicy RemoteSigned
+    ```
+  and confirm with `y`
+- This change is permanent! If you want to revert the change, type:
+    ```powershell
+    Set-ExecutionPolicy Restricted
+    ```
 
 ## Enabling script execution
 - PowerShell by default blocks running scripts for security reasons
@@ -38,3 +54,6 @@ Simple PowerShell script that enables dark mode across the entire Windows 11 sys
 - Windows 11
 - PowerShell 5.1 or newer
 - Administrator privileges
+
+## Disclaimer
+The watermark removal option is experimental and may not work on all Windows versions.

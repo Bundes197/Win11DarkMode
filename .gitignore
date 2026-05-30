@@ -1,2 +1,3 @@
 # Ignore macOS directory attributes file
 .DS_Store
+color.txt
