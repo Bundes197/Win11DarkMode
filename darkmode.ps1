@@ -3,15 +3,17 @@ cls
 New-Variable -Name "DARK_MODE" -Value ([int]0) -Option Constant
 New-Variable -Name "LIGHT_MODE" -Value ([int]1) -Option Constant
 [String]$PERSONALIZE_PATH = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize"
-[String]$ACCENT_PATH = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Accent" # AccentColorMenu, StartColorMenu
-[String]$DWM_PATH = "HKCU:\SOFTWARE\Microsoft\Windows\DWM" # AccentColor, EnableWindowColorization, ColorizationAfterglow, ColorizationColor
+# [String]$ACCENT_PATH = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Accent" # AccentColorMenu, StartColorMenu
+[String]$DWM_PATH = "HKCU:\SOFTWARE\Microsoft\Windows\DWM" # AccentColor         , EnableWindowColorization, ColorizationAfterglow, ColorizationColor
+[String]$DESKTOP_PATH = "HKCU:\Control Panel\Desktop" # AutoColorization
 
 New-Variable -Name "SET_DARK_MODE" -Value "1" -Option Constant
 New-Variable -Name "SET_LIGHT_MODE" -Value "2" -Option Constant
 New-Variable -Name "DISABLE_WIN_WATERMARK" -Value "3" -Option Constant
 New-Variable -Name "COLOR_PREVALENCE" -Value "4" -Option Constant
 New-Variable -Name "SYSTEM_TRANSPARENCY" -Value "5" -Option Constant
-New-Variable -Name "EXIT" -Value "6" -Option Constant
+New-Variable -Name "ACCENT_WALLPAPER" -Value "6" -Option Constant
+New-Variable -Name "EXIT" -Value "7" -Option Constant
 
 function Show-Error {
     param(
@@ -31,7 +33,7 @@ function Execute-Deactivate-Watermark {
     try {
         # Turn off 'Activate Windows' watermark
         Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Services\svsvc" -Name Start -Value 4 -ErrorAction Stop
-        Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\WindowsNT\CurrentVersion\SoftwareProtectionPlatform\Activation" -Name NotificationDisabled -Value 1 -ErrorAction Stop
+        Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform\Activation" -Name NotificationDisabled -Value 1 -ErrorAction Stop
 
         Write-Host "'Activate Windows' watermark related settings have been modified." -ForegroundColor Green
     } catch {
@@ -76,15 +78,15 @@ function Set-Mode {
 
 function Toggle-Accent-Color-Prevalence {
     try {
-        $accColorVal = (Get-ItemProperty -Path $PERSONALIZE_PATH -Name ColorPrevalence).ColorPrevalence
+        $accColorVal = (Get-ItemProperty -Path $PERSONALIZE_PATH -Name ColorPrevalence -ErrorAction Stop).ColorPrevalence
 
         if ($accColorVal -eq 0) {
-            Set-ItemProperty -Path $PERSONALIZE_PATH -Name ColorPrevalence -Value 1
-            Set-ItemProperty -Path $DWM_PATH -Name ColorPrevalence -Value 1
+            Set-ItemProperty -Path $PERSONALIZE_PATH -Name ColorPrevalence -Value 1 -ErrorAction Stop
+            Set-ItemProperty -Path $DWM_PATH -Name ColorPrevalence -Value 1 -ErrorAction Stop
             Write-Host "Theme color prevalence has been successfully turned on." -ForegroundColor Green
         } else {
-            Set-ItemProperty -Path $PERSONALIZE_PATH -Name ColorPrevalence -Value 0
-            Set-ItemProperty -Path $DWM_PATH -Name ColorPrevalence -Value 0
+            Set-ItemProperty -Path $PERSONALIZE_PATH -Name ColorPrevalence -Value 0 -ErrorAction Stop
+            Set-ItemProperty -Path $DWM_PATH -Name ColorPrevalence -Value 0 -ErrorAction Stop
             Write-Host "Theme color prevalence has been successfully turned off." -ForegroundColor Green
         }
     } catch {
@@ -94,14 +96,30 @@ function Toggle-Accent-Color-Prevalence {
 
 function Toggle-Theme-Transparency {
     try {
-        $transparencyVal = (Get-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency).EnableTransparency
+        $transparencyVal = (Get-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency -ErrorAction Stop).EnableTransparency
 
         if ($transparencyVal -eq 0) {
-            Set-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency -Value 1
+            Set-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency -Value 1 -ErrorAction Stop
             Write-Host "Theme transparency has been successfully turned on." -ForegroundColor Green
         } else {
-            Set-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency -Value 0
+            Set-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency -Value 0 -ErrorAction Stop
             Write-Host "Theme transparency has been successfully turned off." -ForegroundColor Green
+        }
+    } catch {
+        Show-Error $_
+    }
+}
+
+function Toggle-Accent-Color-From-Wallpaper {
+    try {
+        $autoColorizationVal = (Get-ItemProperty -Path $DESKTOP_PATH -Name AutoColorization -ErrorAction Stop).AutoColorization
+
+        if ($autoColorizationVal -eq 0) {
+            Set-ItemProperty -Path $DESKTOP_PATH -Name AutoColorization -Value 1 -ErrorAction Stop
+            Write-Host "Accent color from wallpaper has been successfully turned on." -ForegroundColor Green
+        } else {
+            Set-ItemProperty -Path $DESKTOP_PATH -Name AutoColorization -Value 0 -ErrorAction Stop
+            Write-Host "Accent color from wallpaper has been successfully turned off." -ForegroundColor Green
         }
     } catch {
         Show-Error $_
@@ -123,11 +141,12 @@ Write-Host "[2] Set Light mode"
 Write-Host "[3] Turn off 'Activate Windows' watermark (experimental, might not work)"
 Write-Host "[4] Toggle accent color prevalence in system"
 Write-Host "[5] Toggle window transparency in system"
-Write-Host "[6] Exit"
+Write-Host "[6] Toggle accent color from wallpaper"
+Write-Host "[7] Exit"
 
 Write-Host ""
 
-$AnswerVal = Read-Host "Please choose an option (1,2,3,4,5,6)"
+$AnswerVal = Read-Host "Please choose an option (1,2,3,4,5,6,7)"
 
 switch ($AnswerVal) {
     $SET_DARK_MODE {
@@ -148,6 +167,10 @@ switch ($AnswerVal) {
 
     $SYSTEM_TRANSPARENCY {
         Toggle-Theme-Transparency
+    }
+
+    $ACCENT_WALLPAPER {
+        Toggle-Accent-Color-From-Wallpaper
     }
 
     $EXIT {
