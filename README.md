@@ -24,18 +24,22 @@ Simple PowerShell utility for changing Windows 11 personalization settings — e
 
 ## Usage
 1. Open **PowerShell as Administrator**  
-2. Navigate to the folder containing `darkmode.ps1`  
+2. Navigate to the folder containing `darkmode.ps1` in File Explorer
 3. Click the address bar at the top, right-click → **Copy**  
 4. In PowerShell, type:  
     ```powershell
     cd <paste-your-path-here>
     ```
     and press **Enter**
-5. Run the script:
+5. Then type:
+    ```powershell
+    Unblock-File .\darkmode.ps1
+    ```
+6. Run the script:
     ```powershell
     .\darkmode.ps1
     ```
-6. Follow the on-screen instructions
+7. Follow the on-screen instructions
 
 ## Requirements
 - Windows 11
