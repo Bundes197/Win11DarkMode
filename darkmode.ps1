@@ -2,18 +2,20 @@ cls
 
 New-Variable -Name "DARK_MODE" -Value ([int]0) -Option Constant
 New-Variable -Name "LIGHT_MODE" -Value ([int]1) -Option Constant
+
 [String]$PERSONALIZE_PATH = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize"
-# [String]$ACCENT_PATH = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Accent" # AccentColorMenu, StartColorMenu
-[String]$DWM_PATH = "HKCU:\SOFTWARE\Microsoft\Windows\DWM" # AccentColor         , EnableWindowColorization, ColorizationAfterglow, ColorizationColor
-[String]$DESKTOP_PATH = "HKCU:\Control Panel\Desktop" # AutoColorization
+[String]$ACCENT_PATH = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Accent" #AGBR
+[String]$DWM_PATH = "HKCU:\SOFTWARE\Microsoft\Windows\DWM"
+[String]$DESKTOP_PATH = "HKCU:\Control Panel\Desktop"
 
 New-Variable -Name "SET_DARK_MODE" -Value "1" -Option Constant
 New-Variable -Name "SET_LIGHT_MODE" -Value "2" -Option Constant
-New-Variable -Name "DISABLE_WIN_WATERMARK" -Value "3" -Option Constant
-New-Variable -Name "COLOR_PREVALENCE" -Value "4" -Option Constant
-New-Variable -Name "SYSTEM_TRANSPARENCY" -Value "5" -Option Constant
-New-Variable -Name "ACCENT_WALLPAPER" -Value "6" -Option Constant
-New-Variable -Name "EXIT" -Value "7" -Option Constant
+New-Variable -Name "ACCENT_COLOR" -Value "3" -Option Constant
+New-Variable -Name "ACCENT_WALLPAPER" -Value "4" -Option Constant
+New-Variable -Name "COLOR_PREVALENCE" -Value "5" -Option Constant
+New-Variable -Name "SYSTEM_TRANSPARENCY" -Value "6" -Option Constant
+New-Variable -Name "DISABLE_WIN_WATERMARK" -Value "7" -Option Constant
+New-Variable -Name "EXIT" -Value "8" -Option Constant
 
 function Show-Error {
     param(
@@ -42,15 +44,6 @@ function Execute-Deactivate-Watermark {
     
 }
 
-function Deactivate-Watermark {
-    Write-Host ""
-    $AnswerWatermark = Read-Host "Would you also like to turn off 'Activate Windows' watermark? (y/n)"
-
-    if ($AnswerWatermark -eq "y") {
-        Execute-Deactivate-Watermark
-    }
-}
-
 function Set-Mode {
     param (
         [Parameter(Mandatory=$true)]
@@ -77,6 +70,9 @@ function Set-Mode {
 }
 
 function Toggle-Accent-Color-Prevalence {
+    Write-Host ""
+    Write-Host "Toggling Accent color prevalence..."  -ForegroundColor Yellow
+
     try {
         $accColorVal = (Get-ItemProperty -Path $PERSONALIZE_PATH -Name ColorPrevalence -ErrorAction Stop).ColorPrevalence
 
@@ -94,7 +90,10 @@ function Toggle-Accent-Color-Prevalence {
     }
 }
 
-function Toggle-Theme-Transparency {
+function Toggle-Window-Transparency {
+    Write-Host ""
+    Write-Host "Toggling Window transparency..."  -ForegroundColor Yellow
+
     try {
         $transparencyVal = (Get-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency -ErrorAction Stop).EnableTransparency
 
@@ -111,6 +110,9 @@ function Toggle-Theme-Transparency {
 }
 
 function Toggle-Accent-Color-From-Wallpaper {
+    Write-Host ""
+    Write-Host "Toggling Accent color from wallpaper..."  -ForegroundColor Yellow
+
     try {
         $autoColorizationVal = (Get-ItemProperty -Path $DESKTOP_PATH -Name AutoColorization -ErrorAction Stop).AutoColorization
 
@@ -126,6 +128,18 @@ function Toggle-Accent-Color-From-Wallpaper {
     }
 }
 
+function Set-Accent-Color {
+    cls
+
+    Write-Host ""
+    Write-Host "Please select a color:"
+    Write-Host ""
+
+    # List all colors
+
+    $AnswerVal = Read-Host "Please choose an option [1..32]"
+}
+
 # Check if run as admin, if not, restart
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     Start-Process powershell.exe -Verb RunAs -ArgumentList "-NoProfile", "-ExecutionPolicy Bypass", "-Command `"cd '$pwd'; & '$PSCommandPath'`""
@@ -138,15 +152,16 @@ Write-Host ""
 
 Write-Host "[1] Set Dark mode"
 Write-Host "[2] Set Light mode"
-Write-Host "[3] Turn off 'Activate Windows' watermark (experimental, might not work)"
-Write-Host "[4] Toggle accent color prevalence in system"
-Write-Host "[5] Toggle window transparency in system"
-Write-Host "[6] Toggle accent color from wallpaper"
-Write-Host "[7] Exit"
+Write-Host "[3] Set Accent color"
+Write-Host "[4] Toggle Accent color from wallpaper"
+Write-Host "[5] Toggle Accent color prevalence in system"
+Write-Host "[6] Toggle Window transparency in system"
+Write-Host "[7] Turn off 'Activate Windows' watermark (experimental, might not work)"
+Write-Host "[8] Exit"
 
 Write-Host ""
 
-$AnswerVal = Read-Host "Please choose an option (1,2,3,4,5,6,7)"
+$AnswerVal = Read-Host "Please choose an option (1,2,3,4,5,6,7,8)"
 
 switch ($AnswerVal) {
     $SET_DARK_MODE {
@@ -157,8 +172,12 @@ switch ($AnswerVal) {
         Set-Mode $LIGHT_MODE
     }
 
-    $DISABLE_WIN_WATERMARK {
-        Execute-Deactivate-Watermark
+    $ACCENT_COLOR {
+        Set-Accent-Color
+    }
+
+    $ACCENT_WALLPAPER {
+        Toggle-Accent-Color-From-Wallpaper
     }
 
     $COLOR_PREVALENCE {
@@ -166,11 +185,12 @@ switch ($AnswerVal) {
     }
 
     $SYSTEM_TRANSPARENCY {
-        Toggle-Theme-Transparency
+        Toggle-Window-Transparency
     }
 
-    $ACCENT_WALLPAPER {
-        Toggle-Accent-Color-From-Wallpaper
+
+    $DISABLE_WIN_WATERMARK {
+        Execute-Deactivate-Watermark
     }
 
     $EXIT {
