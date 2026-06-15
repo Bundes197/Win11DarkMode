@@ -4,7 +4,6 @@ New-Variable -Name "DARK_MODE" -Value ([int]0) -Option Constant
 New-Variable -Name "LIGHT_MODE" -Value ([int]1) -Option Constant
 
 [String]$PERSONALIZE_PATH = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize"
-[String]$ACCENT_PATH = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Accent" #AGBR
 [String]$DWM_PATH = "HKCU:\SOFTWARE\Microsoft\Windows\DWM"
 [String]$DESKTOP_PATH = "HKCU:\Control Panel\Desktop"
 
@@ -31,17 +30,45 @@ function Show-Error {
     exit
 }
 
-function Execute-Deactivate-Watermark {
+function Deactivate-Watermark {
+    Write-Host ""
+    Write-Host "Deactivating Activate Windows watermark..."  -ForegroundColor Yellow
+
+    $svsvcPath = "HKLM:\System\CurrentControlSet\Services\svsvc"
+    $activationPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform\Activation"
+
     try {
-        # Turn off 'Activate Windows' watermark
-        Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Services\svsvc" -Name Start -Value 4 -ErrorAction Stop
-        Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform\Activation" -Name NotificationDisabled -Value 1 -ErrorAction Stop
+        if (-not (Test-Path $svsvcPath)) {
+            New-Item -Path (Split-Path $svsvcPath -Parent) -Name "svsvc" -Force -ErrorAction Stop | Out-Null
+        }
+        
+        try {
+            $null = Get-ItemProperty -Path $svsvcPath -Name Start -ErrorAction Stop
+        } catch [Microsoft.PowerShell.Commands.WriteErrorException], [System.Management.Automation.ItemNotFoundException] {
+            New-ItemProperty -Path $svsvcPath -Name Start -Value 4 -PropertyType DWORD -Force -ErrorAction Stop | Out-Null
+        }
+
+        if (-not (Test-Path $activationPath)) {
+            $parentPath = Split-Path $activationPath -Parent
+            if (-not (Test-Path $parentPath)) {
+                New-Item -Path (Split-Path $parentPath -Parent) -Name "SoftwareProtectionPlatform" -Force -ErrorAction Stop | Out-Null
+            }
+            New-Item -Path $parentPath -Name "Activation" -Force -ErrorAction Stop | Out-Null
+        }
+
+        try {
+            $null = Get-ItemProperty -Path $activationPath -Name NotificationDisabled -ErrorAction Stop
+        } catch [Microsoft.PowerShell.Commands.WriteErrorException], [System.Management.Automation.ItemNotFoundException] {
+            New-ItemProperty -Path $activationPath -Name NotificationDisabled -Value 1 -PropertyType DWORD -Force -ErrorAction Stop | Out-Null
+        }
+
+        Set-ItemProperty -Path $svsvcPath -Name Start -Value 4 -ErrorAction Stop
+        Set-ItemProperty -Path $activationPath -Name NotificationDisabled -Value 1 -ErrorAction Stop
 
         Write-Host "'Activate Windows' watermark related settings have been modified." -ForegroundColor Green
     } catch {
         Show-Error $_
     }
-    
 }
 
 function Set-Mode {
@@ -57,6 +84,18 @@ function Set-Mode {
     Write-Host "Applying $($ModeName) mode to your system..." -ForegroundColor Yellow
 
     try {
+        try {
+            $null = Get-ItemProperty -Path $PERSONALIZE_PATH -Name SystemUsesLightTheme -ErrorAction Stop
+        } catch [Microsoft.PowerShell.Commands.WriteErrorException], [System.Management.Automation.ItemNotFoundException] {
+            New-ItemProperty -Path $PERSONALIZE_PATH -Name SystemUsesLightTheme -Value $ModeValue -PropertyType DWORD -Force -ErrorAction Stop | Out-Null
+        }
+
+        try {
+            $null = Get-ItemProperty -Path $PERSONALIZE_PATH -Name AppsUseLightTheme -ErrorAction Stop
+        } catch [Microsoft.PowerShell.Commands.WriteErrorException], [System.Management.Automation.ItemNotFoundException] {
+            New-ItemProperty -Path $PERSONALIZE_PATH -Name AppsUseLightTheme -Value $ModeValue -PropertyType DWORD -Force -ErrorAction Stop | Out-Null
+        }
+
         # Set operating system to use dark/light mode
         Set-ItemProperty -Path $PERSONALIZE_PATH -Name SystemUsesLightTheme -Value $ModeValue -ErrorAction Stop
 
@@ -74,7 +113,19 @@ function Toggle-Accent-Color-Prevalence {
     Write-Host "Toggling Accent color prevalence..."  -ForegroundColor Yellow
 
     try {
-        $accColorVal = (Get-ItemProperty -Path $PERSONALIZE_PATH -Name ColorPrevalence -ErrorAction Stop).ColorPrevalence
+        try {
+            $accColorVal = (Get-ItemProperty -Path $PERSONALIZE_PATH -Name ColorPrevalence -ErrorAction Stop).ColorPrevalence
+        } catch [Microsoft.PowerShell.Commands.WriteErrorException], [System.Management.Automation.ItemNotFoundException] {
+            # Create the property if it does not exist, default to 0 to trigger the "turn on" logic below
+            New-ItemProperty -Path $PERSONALIZE_PATH -Name ColorPrevalence -Value 0 -PropertyType DWORD -Force -ErrorAction Stop | Out-Null
+            $accColorVal = 0
+        }
+
+        try {
+            $null = Get-ItemProperty -Path $DWM_PATH -Name ColorPrevalence -ErrorAction Stop
+        } catch {
+            New-ItemProperty -Path $DWM_PATH -Name ColorPrevalence -Value 0 -PropertyType DWORD -Force -ErrorAction Stop | Out-Null
+        }
 
         if ($accColorVal -eq 0) {
             Set-ItemProperty -Path $PERSONALIZE_PATH -Name ColorPrevalence -Value 1 -ErrorAction Stop
@@ -95,7 +146,13 @@ function Toggle-Window-Transparency {
     Write-Host "Toggling Window transparency..."  -ForegroundColor Yellow
 
     try {
-        $transparencyVal = (Get-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency -ErrorAction Stop).EnableTransparency
+        try {
+            $transparencyVal = (Get-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency -ErrorAction Stop).EnableTransparency
+        } catch [Microsoft.PowerShell.Commands.WriteErrorException], [System.Management.Automation.ItemNotFoundException] {
+            # Create the property if it does not exist, default to 0 to trigger the "turn on" logic below
+            New-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency -Value 0 -PropertyType DWORD -Force -ErrorAction Stop | Out-Null
+            $transparencyVal = 0
+        }
 
         if ($transparencyVal -eq 0) {
             Set-ItemProperty -Path $PERSONALIZE_PATH -Name EnableTransparency -Value 1 -ErrorAction Stop
@@ -114,7 +171,13 @@ function Toggle-Accent-Color-From-Wallpaper {
     Write-Host "Toggling Accent color from wallpaper..."  -ForegroundColor Yellow
 
     try {
-        $autoColorizationVal = (Get-ItemProperty -Path $DESKTOP_PATH -Name AutoColorization -ErrorAction Stop).AutoColorization
+        try {
+            $autoColorizationVal = (Get-ItemProperty -Path $DESKTOP_PATH -Name AutoColorization -ErrorAction Stop).AutoColorization
+        } catch [Microsoft.PowerShell.Commands.WriteErrorException], [System.Management.Automation.ItemNotFoundException] {
+            # Create the property if it does not exist, default to 0 to trigger the "turn on" logic below
+            New-ItemProperty -Path $DESKTOP_PATH -Name AutoColorization -Value 0 -PropertyType DWORD -Force -ErrorAction Stop | Out-Null
+            $autoColorizationVal = 0
+        }
 
         if ($autoColorizationVal -eq 0) {
             Set-ItemProperty -Path $DESKTOP_PATH -Name AutoColorization -Value 1 -ErrorAction Stop
@@ -138,6 +201,8 @@ function Set-Accent-Color {
     # List all colors
 
     $AnswerVal = Read-Host "Please choose an option [1..32]"
+
+    # Change the accent color
 }
 
 # Check if run as admin, if not, restart
@@ -156,7 +221,7 @@ Write-Host "[3] Set Accent color"
 Write-Host "[4] Toggle Accent color from wallpaper"
 Write-Host "[5] Toggle Accent color prevalence in system"
 Write-Host "[6] Toggle Window transparency in system"
-Write-Host "[7] Turn off 'Activate Windows' watermark (experimental, might not work)"
+Write-Host "[7] Deactivate 'Activate Windows' watermark (experimental, might not work)"
 Write-Host "[8] Exit"
 
 Write-Host ""
@@ -190,7 +255,7 @@ switch ($AnswerVal) {
 
 
     $DISABLE_WIN_WATERMARK {
-        Execute-Deactivate-Watermark
+        Deactivate-Watermark
     }
 
     $EXIT {
