@@ -4,6 +4,9 @@ Simple PowerShell utility for changing Windows 11 personalization settings — e
 ## Features
 - Enable Dark mode system-wide
 - Enable Light mode system-wide
+- Change desktop wallpaper
+- Set accent color
+- Set accent color from wallpaper
 - Toggle accent color prevalence in the Start menu and taskbar
 - Toggle transparency effects
 - Experimental option for hiding the "Activate Windows" watermark
