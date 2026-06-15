@@ -227,8 +227,9 @@ function Set-Wallpaper {
     Write-Host ""
     Write-Host "Please find the image you want as a wallpaper in file explorer" -ForegroundColor Yellow
     Write-Host "Right click on the image and select 'Copy as path'" -ForegroundColor Yellow
-    Write-Host "Then paste the path after the ':' symbol below" -ForegroundColor Yellow
+    Write-Host "Then paste the path below" -ForegroundColor Yellow
     Write-Host "Pasting invalid path will result in a solid black wallpaper" -ForegroundColor Red
+    Write-Host ""
 
     $PathToImage = (Read-Host).Replace('"', '')
 
