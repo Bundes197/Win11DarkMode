@@ -75,11 +75,18 @@ function Deactivate-Watermark {
         try {
             $null = Get-ItemProperty -Path $activationPath -Name NotificationDisabled -ErrorAction Stop
         } catch {
-            New-ItemProperty -Path $activationPath -Name NotificationDisabled -Value 1 -PropertyType DWORD -Force -ErrorAction Stop | Out-Null
+            New-ItemProperty -Path $activationPath -Name NotificationDisabled -Value 0 -PropertyType DWORD -Force -ErrorAction Stop | Out-Null
+        }
+
+        try {
+            $null = Get-ItemProperty -Path $activationPath -Name Manual -ErrorAction Stop
+        } catch {
+            New-ItemProperty -Path $activationPath -Name Manual -Value 0 -PropertyType DWORD -Force -ErrorAction Stop | Out-Null
         }
 
         Set-ItemProperty -Path $svsvcPath -Name Start -Value 4 -ErrorAction Stop
-        Set-ItemProperty -Path $activationPath -Name NotificationDisabled -Value 1 -ErrorAction Stop
+        Set-ItemProperty -Path $activationPath -Name NotificationDisabled -Value 0 -ErrorAction Stop
+        Set-ItemProperty -Path $activationPath -Name Manual -Value 0 -ErrorAction Stop
 
         Write-Host "'Activate Windows' watermark related settings have been modified." -ForegroundColor Green
     } catch {
