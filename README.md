@@ -1,5 +1,5 @@
 # Win11DarkMode
-Simple PowerShell utility for changing Windows 11 personalization settings — even on machines without an active Windows license.
+Simple PowerShell utility for changing Windows 11 personalization settings, even on machines without an active Windows license.
 
 ## Features
 - Enable Dark mode system-wide
